@@ -1,0 +1,1 @@
+Get-ChildItem -Path . -Recurse -Filter *.zip -File | Move-Item -Destination . -Force

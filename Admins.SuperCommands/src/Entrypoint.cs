@@ -1,4 +1,5 @@
 using Admins.SuperCommands.Commands;
+using Admins.Core.Contract;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
@@ -6,11 +7,13 @@ using SwiftlyS2.Shared.Plugins;
 
 namespace Admins.SuperCommands;
 
-[PluginMetadata(Id = "Admins.SuperCommands", Version = "1.0.0-b4", Name = "Admins - SuperCommands", Author = "Swiftly Development Team", Description = "The admin super commands system for your server.")]
+[PluginMetadata(Id = "Admins.SuperCommands", Version = "1.0.0-b5", Name = "Admins - SuperCommands", Author = "Swiftly Development Team", Description = "The admin super commands system for your server.")]
 public partial class AdminsSuperCommands : BasePlugin
 {
     private ServiceProvider? _serviceProvider;
-    private Core.Contract.IConfigurationManager? _configurationManager;
+    private IConfigurationManager? _configurationManager;
+    private IAdminsManager? _adminsManager;
+    private IGroupsManager? _groupsManager;
     private ServerCommands? _serverCommands;
 
     public AdminsSuperCommands(ISwiftlyCore core) : base(core)
@@ -52,6 +55,40 @@ public partial class AdminsSuperCommands : BasePlugin
         catch (Exception ex)
         {
             Core.Logger.LogError(ex, "Failed to get IConfigurationManager from Admins.Core. Make sure Admins.Core is loaded before Admins.SuperCommands.");
+        }
+
+        try
+        {
+            if (interfaceManager.HasSharedInterface("Admins.Admins.V1"))
+            {
+                _adminsManager = interfaceManager.GetSharedInterface<IAdminsManager>("Admins.Admins.V1");
+                _serverCommands!.SetAdminsManager(_adminsManager);
+            }
+            else
+            {
+                Core.Logger.LogWarning("Admins.Core is not loaded yet. IAdminsManager interface not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Failed to get IAdminsManager from Admins.Core. Make sure Admins.Core is loaded before Admins.SuperCommands.");
+        }
+
+        try
+        {
+            if (interfaceManager.HasSharedInterface("Admins.Groups.V1"))
+            {
+                _groupsManager = interfaceManager.GetSharedInterface<IGroupsManager>("Admins.Groups.V1");
+                _serverCommands!.SetGroupsManager(_groupsManager);
+            }
+            else
+            {
+                Core.Logger.LogWarning("Admins.Core is not loaded yet. IGroupsManager interface not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Failed to get IGroupsManager from Admins.Core. Make sure Admins.Core is loaded before Admins.SuperCommands.");
         }
     }
 }

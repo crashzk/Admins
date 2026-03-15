@@ -20,10 +20,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         var itemName = context.Args[1];
@@ -32,7 +43,10 @@ public partial class ServerCommands
             GiveItemToPlayer(player, itemName);
         }
 
-        NotifyItemGiven(players, context.Sender!, itemName);
+        if (players.Any())
+        {
+            NotifyItemGiven(players, context.Sender!, itemName);
+        }
     }
 
     [Command("melee", permission: "admins.commands.melee")]
@@ -49,10 +63,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         foreach (var player in players)
@@ -60,7 +85,10 @@ public partial class ServerCommands
             StripAndGiveKnife(player);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.melee_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.melee_success");
+        }
     }
 
     [Command("disarm", permission: "admins.commands.disarm")]
@@ -77,10 +105,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         foreach (var player in players)
@@ -88,7 +127,10 @@ public partial class ServerCommands
             RemoveAllItems(player);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.disarm_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.disarm_success");
+        }
     }
 
     [Command("clean", permission: "admins.commands.clean")]

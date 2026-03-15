@@ -10,6 +10,8 @@ public partial class ServerCommands
 {
     private readonly ISwiftlyCore Core = null!;
     private IConfigurationManager ConfigurationManager = null!;
+    private IAdminsManager? AdminsManager;
+    private IGroupsManager? GroupsManager;
 
     public ServerCommands(ISwiftlyCore core)
     {
@@ -21,6 +23,16 @@ public partial class ServerCommands
     public void SetConfigurationManager(IConfigurationManager configurationManager)
     {
         ConfigurationManager = configurationManager;
+    }
+
+    public void SetAdminsManager(IAdminsManager adminsManager)
+    {
+        AdminsManager = adminsManager;
+    }
+
+    public void SetGroupsManager(IGroupsManager groupsManager)
+    {
+        GroupsManager = groupsManager;
     }
 
     /// <summary>
@@ -271,5 +283,68 @@ public partial class ServerCommands
         {
             return TimeZoneInfo.Utc;
         }
+    }
+
+    /// <summary>
+    /// Gets the immunity level of a player (highest of admin direct immunity or group immunity).
+    /// </summary>
+    /// <param name="player">The player to check.</param>
+    /// <returns>The player's immunity level (0-100), or 0 if managers unavailable.</returns>
+    public int GetPlayerImmunityLevel(IPlayer player)
+    {
+        if (AdminsManager == null)
+        {
+            return 0;
+        }
+
+        var admin = AdminsManager.GetAdmin(player.PlayerID);
+        if (admin == null)
+        {
+            return 0;
+        }
+
+        var immunity = admin.Immunity;
+
+        if (GroupsManager != null)
+        {
+            foreach (var groupId in admin.Groups)
+            {
+                var group = GroupsManager.GetGroup(groupId);
+                if (group != null && group.Immunity > immunity)
+                {
+                    immunity = group.Immunity;
+                }
+            }
+        }
+
+        return immunity;
+    }
+
+    /// <summary>
+    /// Checks if an admin can apply an action to a target player based on immunity levels.
+    /// Admin must have strictly higher immunity than target.
+    /// </summary>
+    /// <param name="adminPlayer">The admin performing the action.</param>
+    /// <param name="targetPlayer">The target player.</param>
+    /// <returns>True if action can be applied, false if target is protected.</returns>
+    private bool CanApplyActionToPlayer(IPlayer adminPlayer, IPlayer targetPlayer)
+    {
+        var adminImmunity = GetPlayerImmunityLevel(adminPlayer);
+        var targetImmunity = GetPlayerImmunityLevel(targetPlayer);
+
+        return adminImmunity > targetImmunity;
+    }
+
+    /// <summary>
+    /// Notifies the admin when target player has immunity protection.
+    /// </summary>
+    /// <param name="context">The command context.</param>
+    /// <param name="targetPlayerName">Name of the protected target.</param>
+    /// <param name="targetImmunityLevel">The target's immunity level.</param>
+    public void NotifyAdminOfImmunityProtection(ICommandContext context, string targetPlayerName, int targetImmunityLevel)
+    {
+        var localizer = GetPlayerLocalizer(context);
+        var message = localizer["command.target_has_immunity", ConfigurationManager.GetCurrentConfiguration()!.Prefix, targetPlayerName, targetImmunityLevel];
+        context.Reply(message);
     }
 }
