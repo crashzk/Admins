@@ -15,7 +15,7 @@ using SwiftlyS2.Shared.Plugins;
 
 namespace Admins.Bans;
 
-[PluginMetadata(Id = "Admins.Bans", Version = "1.0.0-b4", Name = "Admins - Bans", Author = "Swiftly Development Team", Description = "The admin system for your server.")]
+[PluginMetadata(Id = "Admins.Bans", Version = "1.0.0-b5", Name = "Admins - Bans", Author = "Swiftly Development Team", Description = "The admin system for your server.")]
 public partial class AdminsBans : BasePlugin
 {
     private ServiceProvider? _serviceProvider;
@@ -26,6 +26,8 @@ public partial class AdminsBans : BasePlugin
     private ServerCommands? _serverCommands;
     private AdminMenu? _adminMenu;
     private IAdminMenuAPI? _adminMenuAPI;
+    private IAdminsManager? _adminsManager;
+    private IGroupsManager? _groupsManager;
 
     public AdminsBans(ISwiftlyCore core) : base(core)
     {
@@ -129,6 +131,41 @@ public partial class AdminsBans : BasePlugin
         catch (Exception ex)
         {
             Core.Logger.LogError(ex, "Failed to get IServerManager from Admins.Core. Make sure Admins.Core is loaded before Admins.Bans.");
+        }
+
+        try
+        {
+            if (interfaceManager.HasSharedInterface("Admins.Admins.V1"))
+            {
+                _adminsManager = interfaceManager.GetSharedInterface<IAdminsManager>("Admins.Admins.V1");
+                _serverCommands!.SetAdminsManager(_adminsManager);
+                _adminMenu!.SetAdminsManager(_adminsManager);
+            }
+            else
+            {
+                Core.Logger.LogWarning("Admins.Core is not loaded yet. IAdminsManager interface not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Failed to get IAdminsManager from Admins.Core. Make sure Admins.Core is loaded before Admins.Comms.");
+        }
+
+        try
+        {
+            if (interfaceManager.HasSharedInterface("Admins.Groups.V1"))
+            {
+                _groupsManager = interfaceManager.GetSharedInterface<IGroupsManager>("Admins.Groups.V1");
+                _serverCommands!.SetGroupsManager(_groupsManager);
+            }
+            else
+            {
+                Core.Logger.LogWarning("Admins.Core is not loaded yet. IGroupsManager interface not available.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "Failed to get IGroupsManager from Admins.Core. Make sure Admins.Core is loaded before Admins.Comms.");
         }
 
         try

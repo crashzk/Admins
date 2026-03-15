@@ -21,8 +21,8 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
         }
@@ -44,12 +44,26 @@ public partial class ServerCommands
             return;
         }
 
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
         foreach (var player in players)
         {
             ApplyHealthAndArmor(player, health, armour, helmet);
         }
 
-        NotifyHealthChanged(players, context.Sender!, health, armour, helmet);
+        if (players.Any())
+        {
+            NotifyHealthChanged(players, context.Sender!, health, armour, helmet);
+        }
     }
 
     [Command("freeze", permission: "admins.commands.freeze")]
@@ -66,10 +80,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         foreach (var player in players)
@@ -77,7 +102,10 @@ public partial class ServerCommands
             SetPlayerMoveType(player, MoveType_t.MOVETYPE_INVALID);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.freeze_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.freeze_success");
+        }
     }
 
     [Command("unfreeze", permission: "admins.commands.unfreeze")]
@@ -94,10 +122,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         foreach (var player in players)
@@ -105,7 +144,10 @@ public partial class ServerCommands
             SetPlayerMoveType(player, MoveType_t.MOVETYPE_WALK);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.unfreeze_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.unfreeze_success");
+        }
     }
 
     [Command("noclip", permission: "admins.commands.noclip")]
@@ -220,10 +262,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         foreach (var player in players)
@@ -231,7 +284,10 @@ public partial class ServerCommands
             SlayPlayer(player);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.slay_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.slay_success");
+        }
     }
 
     [Command("slap", permission: "admins.commands.slap")]
@@ -248,8 +304,8 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
         }
@@ -260,12 +316,26 @@ public partial class ServerCommands
             return;
         }
 
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
         foreach (var player in players)
         {
             ApplySlap(player, damage);
         }
 
-        NotifyPlayersAction(players, context.Sender!, "command.slap_success");
+        if (players.Any())
+        {
+            NotifyPlayersAction(players, context.Sender!, "command.slap_success");
+        }
     }
 
     [Command("rename", permission: "admins.commands.rename")]
@@ -282,10 +352,21 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
         }
 
         var oldNames = new Dictionary<IPlayer, string>();
@@ -301,7 +382,10 @@ public partial class ServerCommands
             }
         }
 
-        NotifyRename(players, context.Sender!, oldNames, newName);
+        if (players.Any())
+        {
+            NotifyRename(players, context.Sender!, oldNames, newName);
+        }
     }
 
     [Command("givemoney", permission: "admins.commands.givemoney")]
@@ -318,8 +402,8 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
         }
@@ -329,12 +413,26 @@ public partial class ServerCommands
             return;
         }
 
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
         foreach (var player in players)
         {
             ModifyPlayerMoney(player, amount, isAdditive: true);
         }
 
-        NotifyMoneyChanged(players, context.Sender!, amount, "command.givemoney_success");
+        if (players.Any())
+        {
+            NotifyMoneyChanged(players, context.Sender!, amount, "command.givemoney_success");
+        }
     }
 
     [Command("setmoney", permission: "admins.commands.setmoney")]
@@ -351,8 +449,8 @@ public partial class ServerCommands
             return;
         }
 
-        var players = FindTargetPlayers(context, context.Args[0]);
-        if (players == null)
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
         {
             return;
         }
@@ -362,12 +460,26 @@ public partial class ServerCommands
             return;
         }
 
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
         foreach (var player in players)
         {
             ModifyPlayerMoney(player, amount, isAdditive: false);
         }
 
-        NotifyMoneyChanged(players, context.Sender!, amount, "command.setmoney_success");
+        if (players.Any())
+        {
+            NotifyMoneyChanged(players, context.Sender!, amount, "command.setmoney_success");
+        }
     }
 
     private void ApplyHealthAndArmor(IPlayer player, int health, int armour, bool helmet)
