@@ -110,7 +110,13 @@ public partial class ServerLoader
                 }
                 else if (existingByIp > 0)
                 {
-                    Core.Logger.LogWarning("Server with IP {IP}:{Port} is already registered. Skipping registration.", serverIp, port);
+                    var existingServer = await db.FirstOrDefaultAsync<Database.Models.Server>(s => s.IP == serverIp && s.Port == port);
+
+                    if (existingServer != null)
+                    {
+                        SetServerGUID(existingServer.GUID);
+                        Core.Logger.LogWarning("Server with IP {IP}:{Port} is already registered. Synced GUID from database: {GUID}", serverIp, port, existingServer.GUID);
+                    }
                 }
             }
             catch (Exception e)
