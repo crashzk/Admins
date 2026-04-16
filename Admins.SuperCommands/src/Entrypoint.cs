@@ -7,7 +7,7 @@ using SwiftlyS2.Shared.Plugins;
 
 namespace Admins.SuperCommands;
 
-[PluginMetadata(Id = "Admins.SuperCommands", Version = "1.0.0-b5", Name = "Admins - SuperCommands", Author = "Swiftly Development Team", Description = "The admin super commands system for your server.")]
+[PluginMetadata(Id = "Admins.SuperCommands", Version = "1.0.0-b6", Name = "Admins - SuperCommands", Author = "Swiftly Development Team", Description = "The admin super commands system for your server.")]
 public partial class AdminsSuperCommands : BasePlugin
 {
     private ServiceProvider? _serviceProvider;
@@ -35,6 +35,12 @@ public partial class AdminsSuperCommands : BasePlugin
 
     public override void Unload()
     {
+        _serverCommands?._beaconPlayers.Clear();
+        foreach (var token in _serverCommands?._beaconEffectTimerToken.Values ?? Enumerable.Empty<CancellationTokenSource>())
+        {
+            token.Cancel();
+        }
+        _serverCommands?._beaconEffectTimerToken.Clear();
     }
 
     public override void UseSharedInterface(IInterfaceManager interfaceManager)
