@@ -56,7 +56,7 @@ public partial class ServerAdmins
 
     public void AssignAdmins()
     {
-        var players = Core.PlayerManager.GetAllPlayers();
+        var players = Core.PlayerManager.GetAllValidPlayers();
         foreach (var player in players)
         {
             if (!AllAdmins.ContainsKey(player.SteamID)) continue;

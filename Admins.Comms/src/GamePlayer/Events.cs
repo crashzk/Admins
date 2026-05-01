@@ -86,7 +86,7 @@ public partial class GamePlayer
 
     public void ScheduleCheck()
     {
-        var players = Core.PlayerManager.GetAllPlayers();
+        var players = Core.PlayerManager.GetAllValidPlayers();
         foreach (var player in players)
         {
             if (player.IsFakeClient) continue;
@@ -150,7 +150,7 @@ public partial class GamePlayer
             "admins.chat"
         );
 
-        var recipients = Core.PlayerManager.GetAllPlayers()
+        var recipients = Core.PlayerManager.GetAllValidPlayers()
             .Where(p => Core.Permission.PlayerHasPermission(p.SteamID, "admins.chat"))
             .ToList();
 
@@ -172,17 +172,11 @@ public partial class GamePlayer
         }
     }
 
-    public HookResult HandleChatMessage(CUserMessageSayText2 msg)
+    public HookResult HandleChatMessage(int playerId, string text, bool teamOnly)
     {
-        if (msg.Entityindex <= 0)
-            return HookResult.Continue;
-
-        var player = Core.PlayerManager.GetPlayer(msg.Entityindex - 1);
+        var player = Core.PlayerManager.GetPlayer(playerId);
         if (player == null || player.IsFakeClient)
             return HookResult.Continue;
-
-        var text = msg.Param2;
-        var teamOnly = msg.Chat;
 
         if (ShouldHandleAdminChat(text, teamOnly))
         {

@@ -11,14 +11,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared;
+using SwiftlyS2.Shared.Commands;
 using SwiftlyS2.Shared.Misc;
-using SwiftlyS2.Shared.NetMessages;
 using SwiftlyS2.Shared.Plugins;
 using SwiftlyS2.Shared.ProtobufDefinitions;
 
 namespace Admins.Comms;
 
-[PluginMetadata(Id = "Admins.Comms", Version = "1.0.0-b6", Name = "Admins - Comms", Author = "Swiftly Development Team", Description = "The admin system for your server.")]
+[PluginMetadata(Id = "Admins.Comms", Version = "1.0.0-b7", Name = "Admins - Comms", Author = "Swiftly Development Team", Description = "The admin system for your server.")]
 public partial class AdminsComms : BasePlugin
 {
     private ServiceProvider? _serviceProvider;
@@ -227,9 +227,9 @@ public partial class AdminsComms : BasePlugin
         }
     }
 
-    [ServerNetMessageHandler]
-    public HookResult OnChatMessage(CUserMessageSayText2 msg)
+    [ClientChatHookHandler]
+    public HookResult OnChatMessage(int playerId, string text, bool teamonly)
     {
-        return _gamePlayer!.HandleChatMessage(msg);
+        return _gamePlayer!.HandleChatMessage(playerId, text, teamonly);
     }
 }

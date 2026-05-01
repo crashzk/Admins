@@ -88,7 +88,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             StripAndGiveKnife(player);
@@ -175,7 +175,7 @@ public partial class ServerCommands
         }
 
         var adminName = context.Sender!.Controller.PlayerName;
-        SendMessageToPlayers(Core.PlayerManager.GetAllPlayers().ToList(), (p, localizer) =>
+        SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, localizer) =>
         {
             return (localizer[
                 "command.clean_success",

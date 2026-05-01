@@ -43,10 +43,10 @@ public class BansManager : IBansManager
 
             OnAdminBanAdded?.Invoke(ban);
 
-            var players = Core.PlayerManager.GetAllPlayers();
+            var players = Core.PlayerManager.GetAllValidPlayers();
             foreach (var player in players)
             {
-                if (player.IsFakeClient || !player.IsValid)
+                if (player.IsFakeClient)
                     continue;
 
                 if ((long)player.SteamID == ban.SteamId64 || (!string.IsNullOrEmpty(ban.PlayerIp) && player.IPAddress == ban.PlayerIp))

@@ -76,7 +76,7 @@ public class GamePlayer : IGamePlayer
 
             if (totalBans == 0 && totalGags == 0 && totalMutes == 0) return;
 
-            var admins = Core.PlayerManager.GetAllPlayers()
+            var admins = Core.PlayerManager.GetAllValidPlayers()
                 .Where(p => Core.Permission.PlayerHasPermission(p.SteamID, "admins.notify"))
                 .ToList();
 
