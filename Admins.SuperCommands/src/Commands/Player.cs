@@ -420,6 +420,174 @@ public partial class ServerCommands
         }
     }
 
+    [Command("color", permission: "admins.commands.color")]
+    public void Command_Color(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 4, "color", ["<player>", "<r>", "<g>", "<b>", "[a]"]))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[1], "r", 0, 255, out var r))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[2], "g", 0, 255, out var g))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[3], "b", 0, 255, out var b))
+        {
+            return;
+        }
+
+        var a = 255;
+        if (context.Args.Length >= 5 && !TryParseInt(context, context.Args[4], "a", 0, 255, out a))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        var localizer = GetPlayerLocalizer(context);
+        foreach (var player in players)
+        {
+            if (!IsValidAlivePawn(player.PlayerPawn))
+            {
+                context.Reply(localizer[
+                    "command.target_not_alive",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    GetPlayerName(player)
+                ]);
+                return;
+            }
+
+            ApplyColorize(player, r, g, b, a);
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, messageLocalizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (messageLocalizer[
+                    "command.color_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName,
+                    r,
+                    g,
+                    b,
+                    a
+                ], MessageType.Chat);
+            });
+        }
+    }
+
+    [Command("glow", permission: "admins.commands.glow")]
+    public void Command_Glow(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 4, "glow", ["<player>", "<r>", "<g>", "<b>", "[a]"]))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[1], "r", 0, 255, out var r))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[2], "g", 0, 255, out var g))
+        {
+            return;
+        }
+
+        if (!TryParseInt(context, context.Args[3], "b", 0, 255, out var b))
+        {
+            return;
+        }
+
+        var a = 255;
+        if (context.Args.Length >= 5 && !TryParseInt(context, context.Args[4], "a", 0, 255, out a))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        var localizer = GetPlayerLocalizer(context);
+        foreach (var player in players)
+        {
+            if (!IsValidAlivePawn(player.PlayerPawn))
+            {
+                context.Reply(localizer[
+                    "command.target_not_alive",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    GetPlayerName(player)
+                ]);
+                return;
+            }
+
+            ApplyGlow(player, r, g, b, a);
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, messageLocalizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (messageLocalizer[
+                    "command.glow_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName,
+                    r,
+                    g,
+                    b,
+                    a
+                ], MessageType.Chat);
+            });
+        }
+    }
+
     [EventListener<EventDelegates.OnClientDisconnected>]
     public void OnClientDisconnected(IOnClientDisconnectedEvent e)
     {
@@ -1166,6 +1334,31 @@ public partial class ServerCommands
         netMessage.Flags = (uint)flag;
         netMessage.Color = color.R | ((uint)color.G << 8) | ((uint)color.B << 16) | ((uint)color.A << 24);
         netMessage.SendToPlayer(player.PlayerID);
+    }
+
+    private void ApplyColorize(IPlayer player, int r, int g, int b, int a)
+    {
+        var pawn = player.PlayerPawn;
+        if (!IsValidAlivePawn(pawn))
+        {
+            return;
+        }
+
+        pawn!.Render = new(r, g, b, a);
+        pawn.RenderUpdated();
+    }
+
+    private void ApplyGlow(IPlayer player, int r, int g, int b, int a)
+    {
+        var pawn = player.PlayerPawn;
+        if (!IsValidAlivePawn(pawn))
+        {
+            return;
+        }
+
+        pawn!.RenderMode = RenderMode_t.kRenderTransAlpha;
+        pawn.Render = new(r, g, b, a);
+        pawn.RenderUpdated();
     }
 
     private enum FadeFlags
