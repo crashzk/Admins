@@ -3,6 +3,11 @@ using SwiftlyS2.Shared.Natives;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.Sounds;
 using SwiftlyS2.Shared.SchemaDefinitions;
+using SwiftlyS2.Shared.ProtobufDefinitions;
+using SwiftlyS2.Shared.Events;
+using SwiftlyS2.Shared.GameEvents;
+using SwiftlyS2.Shared.Misc;
+using SwiftlyS2.Shared.GameEventDefinitions;
 
 namespace Admins.SuperCommands.Commands;
 
@@ -11,6 +16,7 @@ public partial class ServerCommands
     // globals
     public List<IPlayer> _beaconPlayers = new();
     public Dictionary<IPlayer, CancellationTokenSource> _beaconEffectTimerToken = new();
+    public Dictionary<IPlayer, Vector> _playerLastCoords = new();
 
     [Command("hp", permission: "admins.commands.hp")]
     [CommandAlias("health")]
@@ -112,7 +118,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             SetPlayerMoveType(player, MoveType_t.MOVETYPE_INVALID);
@@ -160,7 +166,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             SetPlayerMoveType(player, MoveType_t.MOVETYPE_WALK);
@@ -175,6 +181,271 @@ public partial class ServerCommands
                 ], MessageType.Chat);
             });
         }
+    }
+
+    [Command("bury", permission: "admins.commands.bury")]
+    public void Command_Bury(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 1, "bury", ["<player>", "[depth]"]))
+        {
+            return;
+        }
+
+        var depth = BuryDepth;
+        if (context.Args.Length >= 2 && !TryParseFloat(context, context.Args[1], "depth", 0.1f, 1000.0f, out depth))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        var localizer = GetPlayerLocalizer(context);
+        foreach (var player in players)
+        {
+            var pawn = player.PlayerPawn;
+            if (!IsValidAlivePawn(pawn) || !TryMovePawnVertical(pawn!, -depth))
+            {
+                context.Reply(localizer[
+                    "command.target_not_alive",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    GetPlayerName(player)
+                ]);
+                return;
+            }
+
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, messageLocalizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (messageLocalizer[
+                    "command.bury_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName
+                ], MessageType.Chat);
+            });
+        }
+    }
+
+    [Command("unbury", permission: "admins.commands.unbury")]
+    public void Command_Unbury(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 1, "unbury", ["<player>", "[depth]"]))
+        {
+            return;
+        }
+
+        var depth = UnburyDepth;
+        if (context.Args.Length >= 2 && !TryParseFloat(context, context.Args[1], "depth", 0.1f, 1000.0f, out depth))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        var localizer = GetPlayerLocalizer(context);
+        foreach (var player in players)
+        {
+            var pawn = player.PlayerPawn;
+            if (!IsValidAlivePawn(pawn) || !TryMovePawnVertical(pawn!, depth))
+            {
+                context.Reply(localizer[
+                    "command.target_not_alive",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    GetPlayerName(player)
+                ]);
+                return;
+            }
+
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, messageLocalizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (messageLocalizer[
+                    "command.unbury_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName
+                ], MessageType.Chat);
+            });
+        }
+    }
+
+    [Command("blind", permission: "admins.commands.blind")]
+    public void Command_Blind(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 2, "blind", ["<player>", "<hold_seconds>"]))
+        {
+            return;
+        }
+
+        if (!TryParseFloat(context, context.Args[1], "hold_seconds", 0.1f, 60.0f, out var holdSeconds))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        foreach (var player in players)
+        {
+            ApplyBlind(player, holdSeconds);
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, localizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (localizer[
+                    "command.blind_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName
+                ], MessageType.Chat);
+            });
+        }
+    }
+
+    [Command("unblind", permission: "admins.commands.unblind")]
+    public void Command_Unblind(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 1, "unblind", ["<player>"]))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        foreach (var player in players)
+        {
+            var controller = player.Controller;
+            if (controller == null || !controller.IsValid)
+            {
+                continue;
+            }
+
+            ApplyUnblind(player);
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, localizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (localizer[
+                    "command.unblind_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName
+                ], MessageType.Chat);
+            });
+        }
+    }
+
+    [EventListener<EventDelegates.OnClientDisconnected>]
+    public void OnClientDisconnected(IOnClientDisconnectedEvent e)
+    {
+        var player = Core.PlayerManager.GetPlayer(e.PlayerId);
+        if (player == null)
+        {
+            return;
+        }
+
+        StopBeaconOnPlayer(player);
+        _playerLastCoords.Remove(player);
+    }
+
+    [GameEventHandler(HookMode.Post)]
+    public void OnPlayerDeath(EventPlayerDeath e)
+    {
+        var player = e.UserIdPlayer;
+        if (player == null) return;
+
+        var pawn = player.PlayerPawn;
+        if (pawn == null || !pawn.IsValid || pawn.AbsOrigin == null)
+        {
+            return;
+        }
+
+        _playerLastCoords[player] = pawn.AbsOrigin.Value;
     }
 
     [Command("kick", permission: "admins.commands.kick")]
@@ -208,7 +479,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             player.Kick($"Kicked by admin {adminName}", SwiftlyS2.Shared.ProtobufDefinitions.ENetworkDisconnectionReason.NETWORK_DISCONNECT_KICKED);
@@ -240,7 +511,7 @@ public partial class ServerCommands
         {
             players.Add(context.Sender!); // If no player argument is provided, apply to the command sender
         }
-        else 
+        else
         {
             var targetPlayers = FindTargetPlayers(context, context.Args[0]);
             if (targetPlayers == null)
@@ -259,7 +530,7 @@ public partial class ServerCommands
             }
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         var Localizer = GetPlayerLocalizer(context);
         foreach (var player in players)
         {
@@ -272,7 +543,7 @@ public partial class ServerCommands
             }
 
             var IsAlreadyHaveBeacon = false;
-            if(_beaconPlayers.Contains(player))
+            if (_beaconPlayers.Contains(player))
             {
                 StopBeaconOnPlayer(player);
                 IsAlreadyHaveBeacon = true;
@@ -310,7 +581,7 @@ public partial class ServerCommands
         {
             players.Add(context.Sender!); // If no player argument is provided, apply to the command sender
         }
-        else 
+        else
         {
             var targetPlayers = FindTargetPlayers(context, context.Args[0]);
             if (targetPlayers == null)
@@ -329,7 +600,7 @@ public partial class ServerCommands
             }
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         var Localizer = GetPlayerLocalizer(context);
         foreach (var player in players)
         {
@@ -342,7 +613,7 @@ public partial class ServerCommands
             }
 
             var IsAlreadyNoclip = player.PlayerPawn!.ActualMoveType == MoveType_t.MOVETYPE_NOCLIP;
-            if(IsAlreadyNoclip) SetPlayerMoveType(player, MoveType_t.MOVETYPE_WALK);
+            if (IsAlreadyNoclip) SetPlayerMoveType(player, MoveType_t.MOVETYPE_WALK);
             else SetPlayerMoveType(player, MoveType_t.MOVETYPE_NOCLIP);
 
             SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, localizer) =>
@@ -396,7 +667,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         var Localizer = GetPlayerLocalizer(context);
         foreach (var player in players)
         {
@@ -463,7 +734,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         var Localizer = GetPlayerLocalizer(context);
         foreach (var player in players)
         {
@@ -524,7 +795,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             SlayPlayer(player);
@@ -578,7 +849,7 @@ public partial class ServerCommands
             players.Add(player);
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             ApplySlap(player, damage);
@@ -628,7 +899,7 @@ public partial class ServerCommands
 
         var newName = context.Args[1];
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             if (player.Controller != null && player.Controller.IsValid)
@@ -833,6 +1104,77 @@ public partial class ServerCommands
         pawn.MoveTypeUpdated();
     }
 
+    private const float BuryDepth = 10.0f;
+    private const float UnburyDepth = 15.0f;
+
+    private bool TryMovePawnVertical(CCSPlayerPawn pawn, float depth)
+    {
+        var origin = pawn.AbsOrigin;
+        var rotation = pawn.AbsRotation;
+        if (origin == null || rotation == null)
+        {
+            return false;
+        }
+
+        var newPos = new Vector(
+            origin.Value.X,
+            origin.Value.Y,
+            origin.Value.Z + depth
+        );
+
+        pawn.Teleport(newPos, rotation, VectorZero);
+        return true;
+    }
+
+    private static readonly Color BlindColor = Color.Black;
+
+    private void ApplyBlind(IPlayer player, float holdSeconds)
+    {
+        ColorScreen(player, BlindColor, holdSeconds);
+    }
+
+    private void ApplyUnblind(IPlayer player)
+    {
+        ColorScreen(player, BlindColor, 0.0f, 0.0f);
+    }
+
+    private void ColorScreen(
+        IPlayer player,
+        Color color,
+        float hold = 0.1f,
+        float fade = 0.2f,
+        FadeFlags flags = FadeFlags.FADE_IN,
+        bool withPurge = true)
+    {
+        using var netMessage = Core.NetMessage.Create<CUserMessageFade>();
+        netMessage.Duration = Convert.ToUInt32(fade * 512);
+        netMessage.HoldTime = Convert.ToUInt32(hold * 512);
+
+        var flag = flags switch
+        {
+            FadeFlags.FADE_IN => 0x0001,
+            FadeFlags.FADE_OUT => 0x0002,
+            FadeFlags.FADE_STAYOUT => 0x0008,
+            _ => 0x0001
+        };
+
+        if (withPurge)
+        {
+            flag |= 0x0010;
+        }
+
+        netMessage.Flags = (uint)flag;
+        netMessage.Color = color.R | ((uint)color.G << 8) | ((uint)color.B << 16) | ((uint)color.A << 24);
+        netMessage.SendToPlayer(player.PlayerID);
+    }
+
+    private enum FadeFlags
+    {
+        FADE_IN,
+        FADE_OUT,
+        FADE_STAYOUT
+    }
+
     private bool IsValidAlivePawn(CCSPlayerPawn? pawn)
     {
         return pawn != null && pawn!.IsValid && pawn!.LifeState == (byte)LifeState_t.LIFE_ALIVE;
@@ -896,7 +1238,7 @@ public partial class ServerCommands
             return;
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             ToggleGodMode(player);
@@ -934,7 +1276,7 @@ public partial class ServerCommands
             return;
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             RespawnPlayer(player);
@@ -949,9 +1291,77 @@ public partial class ServerCommands
                 ], MessageType.Chat);
             });
         }
+    }
 
-        
-        
+    [Command("hrespawn", permission: "admins.commands.hrespawn")]
+    [CommandAlias("1up")]
+    public void Command_HRespawn(ICommandContext context)
+    {
+        if (!context.IsSentByPlayer)
+        {
+            SendByPlayerOnly(context);
+            return;
+        }
+
+        if (!ValidateArgsCount(context, 1, "hrespawn", ["<player>"]))
+        {
+            return;
+        }
+
+        var targetPlayers = FindTargetPlayers(context, context.Args[0]);
+        if (targetPlayers == null)
+        {
+            return;
+        }
+
+        var players = new List<IPlayer>();
+        foreach (var player in targetPlayers)
+        {
+            if (!CanApplyActionToPlayer(context.Sender!, player))
+            {
+                NotifyAdminOfImmunityProtection(context, GetPlayerName(player), GetPlayerImmunityLevel(player));
+                continue;
+            }
+            players.Add(player);
+        }
+
+        var adminName = context.Sender!.Controller.PlayerName;
+        var localizer = GetPlayerLocalizer(context);
+        foreach (var player in players)
+        {
+            if (!_playerLastCoords.TryGetValue(player, out var lastCoords))
+            {
+                context.Reply(localizer[
+                    "command.hrespawn_no_last_position",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    GetPlayerName(player)
+                ]);
+                continue;
+            }
+
+            RespawnPlayer(player);
+            Core.Scheduler.NextTick(() =>
+            {
+                var pawn = player.PlayerPawn;
+                if (pawn == null || !pawn.IsValid)
+                {
+                    return;
+                }
+
+                pawn.Teleport(lastCoords, pawn.AbsRotation, VectorZero);
+            });
+
+            SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, messageLocalizer) =>
+            {
+                var playerName = GetPlayerName(player);
+                return (messageLocalizer[
+                    "command.hrespawn_success",
+                    ConfigurationManager.GetCurrentConfiguration()!.Prefix,
+                    adminName,
+                    playerName
+                ], MessageType.Chat);
+            });
+        }
     }
 
     [Command("swap", permission: "admins.commands.swap")]
@@ -974,7 +1384,7 @@ public partial class ServerCommands
             return;
         }
 
-        var adminName = context.Sender!.Controller.PlayerName; 
+        var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
             SwapPlayerTeam(player);
@@ -1024,9 +1434,9 @@ public partial class ServerCommands
         var adminName = context.Sender!.Controller.PlayerName;
         foreach (var player in players)
         {
-            if(!player.IsAlive) player.ChangeTeam(targetTeam.Value);
+            if (!player.IsAlive) player.ChangeTeam(targetTeam.Value);
             else player.SwitchTeam(targetTeam.Value);
-            
+
             var TargetteamName = targetTeam.Value switch
             {
                 Team.CT => "CT",
@@ -1119,10 +1529,10 @@ public partial class ServerCommands
                 origin.Value.Y - (forward.Y * 100f),
                 origin.Value.Z
             );
-            
+
             adminPawn!.Teleport(safeOrigin, rotation, new Vector(0, 0, 0));
 
-            var adminName = context.Sender!.Controller.PlayerName; 
+            var adminName = context.Sender!.Controller.PlayerName;
             SendMessageToPlayers(Core.PlayerManager.GetAllValidPlayers(), (p, localizer) =>
             {
                 var playerName = GetPlayerName(targetPlayer);
@@ -1175,7 +1585,7 @@ public partial class ServerCommands
             return;
         }
 
-        var validPlayers = players.Where(p =>  p.Slot != context.Sender.Slot).ToList();
+        var validPlayers = players.Where(p => p.Slot != context.Sender.Slot).ToList();
 
         if (validPlayers.Count == 0)
         {
@@ -1198,7 +1608,7 @@ public partial class ServerCommands
                 origin.Value.Z
             );
 
-            var adminName = context.Sender!.Controller.PlayerName; 
+            var adminName = context.Sender!.Controller.PlayerName;
             foreach (var player in validPlayers)
             {
                 var playerName = GetPlayerName(player);
@@ -1417,7 +1827,7 @@ public partial class ServerCommands
 
     private void PlaySoundOnPlayer(IPlayer? player, string soundPath)
     {
-        if(player == null || !player.IsValid) return;
+        if (player == null || !player.IsValid) return;
 
         using var soundEvent = new SoundEvent(soundPath);
         soundEvent.SourceEntityIndex = -1;
@@ -1445,9 +1855,10 @@ public partial class ServerCommands
         beam.EndPos.Z = endPos.Z;
         beam.DispatchSpawn();
 
-        Core.Scheduler.DelayBySeconds(life, () => {
-            if(beam != null && beam.IsValid) 
-                beam.Despawn(); 
+        Core.Scheduler.DelayBySeconds(life, () =>
+        {
+            if (beam != null && beam.IsValid)
+                beam.Despawn();
         });
 
         return ((int)beam.Index, beam);
