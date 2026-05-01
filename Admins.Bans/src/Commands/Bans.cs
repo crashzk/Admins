@@ -191,7 +191,7 @@ public partial class ServerCommands
         bool isGlobal)
     {
         var applicablePlayers = new List<IPlayer>();
-        
+
         foreach (var player in players)
         {
             if (!CanApplyActionToPlayer(context, player))
@@ -309,8 +309,7 @@ public partial class ServerCommands
 
     private IPlayer? GetOnlinePlayerBySteamID(ulong steamId64)
     {
-        var allPlayers = Core.PlayerManager.GetAllPlayers();
-        return allPlayers.FirstOrDefault(p => !p.IsFakeClient && p.IsValid && p.SteamID == steamId64);
+        return Core.PlayerManager.GetPlayerFromSteamId(steamId64);
     }
 
     private void ApplyOfflineBan(

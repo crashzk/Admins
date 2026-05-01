@@ -132,10 +132,10 @@ public class ServerBans
 
     public void CheckAllOnlinePlayers()
     {
-        var players = Core.PlayerManager.GetAllPlayers();
+        var players = Core.PlayerManager.GetAllValidPlayers();
         foreach (var player in players)
         {
-            if (player.IsFakeClient || !player.IsValid)
+            if (player.IsFakeClient)
                 continue;
 
             CheckPlayer(player);

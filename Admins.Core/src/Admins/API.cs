@@ -96,16 +96,9 @@ public class AdminsManager : IAdminsManager
 
     public IAdmin? GetAdmin(ulong steamId64)
     {
-        var players = _core.PlayerManager.GetAllPlayers();
-        foreach (var player in players)
-        {
-            if (player.SteamID == steamId64)
-            {
-                return GetAdmin(player);
-            }
-        }
-
-        return null;
+        var player = _core.PlayerManager.GetPlayerFromSteamId(steamId64);
+        if (player == null) return null;
+        return GetAdmin(player);
     }
 
     public List<IAdmin> GetAllAdmins()

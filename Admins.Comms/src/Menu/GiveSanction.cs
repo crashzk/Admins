@@ -313,7 +313,7 @@ public partial class AdminMenu
                 () => BuildReasonsMenu(player, online, sanctionType, sanctionKind, selectedPlayers))
             { Enabled = false };
 
-            var players = Core.PlayerManager.GetAllPlayers().Where(p => p.IsValid && !p.IsFakeClient && p.PlayerID != player.PlayerID);
+            var players = Core.PlayerManager.GetAllValidPlayers().Where(p => !p.IsFakeClient && p.PlayerID != player.PlayerID);
             if (players.Any())
             {
                 foreach (var p in players)

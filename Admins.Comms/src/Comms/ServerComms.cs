@@ -99,10 +99,10 @@ public class ServerComms
 
     public async Task RefreshOnlinePlayerSanctionsAsync()
     {
-        var players = Core.PlayerManager.GetAllPlayers();
+        var players = Core.PlayerManager.GetAllValidPlayers();
         foreach (var player in players)
         {
-            if (player.IsFakeClient || !player.IsValid)
+            if (player.IsFakeClient)
                 continue;
 
             await LoadPlayerSanctionsAsync(player.SteamID, player.IPAddress);

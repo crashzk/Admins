@@ -42,10 +42,10 @@ public class CommsManager : ICommsManager
             }
 
             // Add to online cache if the target player is online
-            var players = Core.PlayerManager.GetAllPlayers();
+            var players = Core.PlayerManager.GetAllValidPlayers();
             foreach (var player in players)
             {
-                if (player.IsFakeClient || !player.IsValid)
+                if (player.IsFakeClient)
                     continue;
 
                 if ((long)player.SteamID == sanction.SteamId64 || (!string.IsNullOrEmpty(sanction.PlayerIp) && player.IPAddress == sanction.PlayerIp))
@@ -137,10 +137,10 @@ public class CommsManager : ICommsManager
             }
 
             // Remove from online cache for all online players who might match
-            var players = Core.PlayerManager.GetAllPlayers();
+            var players = Core.PlayerManager.GetAllValidPlayers();
             foreach (var player in players)
             {
-                if (player.IsFakeClient || !player.IsValid)
+                if (player.IsFakeClient)
                     continue;
 
                 if ((long)player.SteamID == sanction.SteamId64 || (!string.IsNullOrEmpty(sanction.PlayerIp) && player.IPAddress == sanction.PlayerIp))
@@ -181,10 +181,10 @@ public class CommsManager : ICommsManager
             }
 
             // Refresh the affected player's cache
-            var players = Core.PlayerManager.GetAllPlayers();
+            var players = Core.PlayerManager.GetAllValidPlayers();
             foreach (var player in players)
             {
-                if (player.IsFakeClient || !player.IsValid)
+                if (player.IsFakeClient)
                     continue;
 
                 if ((long)player.SteamID == sanction.SteamId64 || (!string.IsNullOrEmpty(sanction.PlayerIp) && player.IPAddress == sanction.PlayerIp))
