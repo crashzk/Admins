@@ -11,6 +11,9 @@
   <img src="https://img.shields.io/github/license/SwiftlyS2-Plugins/Admins" alt="License">
 </p>
 
+> [!warning]
+> This plugin is still in beta.
+
 ## Table of Contents
 
 - [Building](#building)
@@ -71,6 +74,13 @@ The Immunity Mode system controls how admins can interact with other admins base
 ```
 
 ## Commands & Permissions
+
+### Menu Permissions
+
+| Category | Permission | Description |
+|---------|-----------|-------------|
+| `Bans` | `admins.menu.bans` | Manage server bans |
+| `Comms` | `admins.menu.comms` | Manage admin comms |
 
 ### Core Commands
 
