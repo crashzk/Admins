@@ -11,6 +11,9 @@
   <img src="https://img.shields.io/github/license/SwiftlyS2-Plugins/Admins" alt="License">
 </p>
 
+> [!warning]
+> This plugin is still in beta.
+
 ## Table of Contents
 
 - [Building](#building)
