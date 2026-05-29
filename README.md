@@ -72,6 +72,13 @@ The Immunity Mode system controls how admins can interact with other admins base
 
 ## Commands & Permissions
 
+### Menu Permissions
+
+| Category | Permission | Description |
+|---------|-----------|-------------|
+| `Bans` | `admins.menu.bans` | Manage server bans |
+| `Comms` | `admins.menu.comms` | Manage admin comms |
+
 ### Core Commands
 
 | Command | Permission | Description |
