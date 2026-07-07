@@ -435,7 +435,7 @@ sw_groups give moderator 50 "admins.commands.ban,admins.commands.kick,admins.com
 sw_groups give vip 10 "admins.commands.noclip"
 
 # Add yourself as owner
-sw_groups give 76561198123456789 "YourName" 100 "" "owner"
+sw_admins give 76561198123456789 "YourName" 100 "" "owner"
 
 # Add other admins
 sw_admins give 76561198987654321 "AdminName" 90 "" "admin"
